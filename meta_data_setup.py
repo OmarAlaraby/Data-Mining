@@ -1,5 +1,6 @@
 import sqlite3
 import csv
+import os
 
 
 def extractMetaDataIntoCSVFile(database_file, output_csv):
@@ -92,5 +93,12 @@ def extractMetaDataIntoCSVFile(database_file, output_csv):
     conn.close()
 
 
-# Example usage
-extractMetaDataIntoCSVFile("Chinook.sqlite", "databases_metadata.csv")
+DATABASES_DIR = os.getcwd() + '/databases'
+databasesMetaDataFile = "databases_metadata.csv"
+
+for filename in os.listdir(DATABASES_DIR) :
+    databasePath = os.path.join(DATABASES_DIR, filename)
+
+    extractMetaDataIntoCSVFile(databasePath, databasesMetaDataFile)
+
+
