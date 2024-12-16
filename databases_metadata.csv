@@ -1,0 +1,12 @@
+table_name,num_columns,num_rows,has_primary_key,num_indexes,num_foreign_keys,num_relations,is_overly_denormalized,num_redundant_relationships,num_foreign_key_columns,average_column_length,has_composite_primary_key,has_autoincrement
+Album,3,347,1,1,1,1,0,0,1,5.0,0,0
+Artist,2,275,1,0,0,0,0,0,0,4.0,0,0
+Customer,13,59,1,1,1,1,1,0,1,6.363636363636363,0,0
+Employee,15,8,1,1,1,1,1,0,1,6.538461538461538,0,0
+Genre,2,25,1,0,0,0,0,0,0,4.0,0,0
+Invoice,9,412,1,1,1,1,0,0,1,12.0,0,0
+InvoiceLine,5,2240,1,2,2,2,0,0,2,9.0,0,0
+MediaType,2,5,1,0,0,0,0,0,0,4.0,0,0
+Playlist,2,18,1,0,0,0,0,0,0,4.0,0,0
+PlaylistTrack,2,8715,1,2,2,2,0,0,2,0,0,0
+Track,9,3503,1,3,3,3,0,0,3,7.0,0,0
