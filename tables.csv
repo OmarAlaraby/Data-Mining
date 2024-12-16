@@ -1,0 +1,12 @@
+table_name,missing_primary_key,missing_foreign_keys,redundant_relationships,overindexed,overly_denormalized
+Album,0,0,0,0,0
+Artist,0,1,0,0,0
+Customer,0,0,0,0,0
+Employee,0,0,0,0,0
+Genre,0,1,0,0,0
+Invoice,0,0,0,0,0
+InvoiceLine,0,0,0,0,0
+MediaType,0,1,0,0,0
+Playlist,0,1,0,0,0
+PlaylistTrack,0,0,0,0,0
+Track,0,0,0,0,0
