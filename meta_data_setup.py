@@ -3,15 +3,10 @@ import csv
 import os
 
 
-def extractMetaDataIntoCSVFile(database_file, writer):
+def extractMetaDataIntoCSVFile(database_file,filename ,writer):
     conn = sqlite3.connect(database_file)
     cursor = conn.cursor()
 
-
-    
-    # overIndexing = totalnumindex / totalnumcol
-    # primaryKeyValidation
-    # avgNumColumns = totalnumcolumns / len(tables)
 
     # Extract tables metadata
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -39,7 +34,7 @@ def extractMetaDataIntoCSVFile(database_file, writer):
         cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
         num_rows = cursor.fetchone()[0]
         totalNumRows += num_rows
-
+        
         # Check for primary key
         has_primary_key = 0
         for column in columns:
@@ -52,7 +47,6 @@ def extractMetaDataIntoCSVFile(database_file, writer):
         # Extract foreign key metadata
         cursor.execute(f"PRAGMA foreign_key_list('{table_name}');")
         foreign_keys = cursor.fetchall()
-        num_foreign_keys = len(foreign_keys)
 
         # Detect redundant relationships
         fk_targets = {(fk[2], fk[4]) for fk in foreign_keys}
@@ -68,13 +62,17 @@ def extractMetaDataIntoCSVFile(database_file, writer):
         num_indexes = len(indexes)
         totalNumIndex += num_indexes
 
+    # overIndexing = totalnumindex / totalnumcol
+    # primaryKeyValidation
+    # avgNumColumns = totalnumcolumns / len(tables)
 
     overIndexing = totalNumIndex / totalNumColumns
     avgNumColumns = totalNumColumns / len(tables)
     avgNumRows = totalNumRows / len(tables)
+    filename = filename[:len(filename) - 7]
     # Write the row with metadata
     writer.writerow([
-        avgNumColumns , avgNumRows , overIndexing , primaryKeyValidation , redundantRelationshipsValidaiton
+        filename , avgNumColumns , avgNumRows , overIndexing , primaryKeyValidation , redundantRelationshipsValidaiton
     
     ])
 
@@ -89,10 +87,11 @@ with open(databasesMetaDataFile, mode="w", newline="") as file:
 
     # Write header
     writer.writerow([
-        "avgNumColumns" , "avgNumRows" , "overIndexing" ,  "primaryKeyValidation" , "RedundantRelationshipsValidaiton"
+        "dbName","avgNumColumns" , "avgNumRows" , "overIndexing" ,  "primaryKeyValidation" , "RedundantRelationshipsValidaiton"
     ])
+
     for filename in os.listdir(DATABASES_DIR) :
         databasePath = os.path.join(DATABASES_DIR, filename)
-        extractMetaDataIntoCSVFile(databasePath, writer)
+        extractMetaDataIntoCSVFile(databasePath, filename ,writer)
 
 
