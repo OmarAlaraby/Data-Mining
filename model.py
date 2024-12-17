@@ -1,74 +1,104 @@
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import LabelEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix
-from sklearn import metrics
-import seaborn as sns
 from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
-# Determine features and goal
-def determine_features_and_goal(dataFrame):
-    features = dataFrame.drop(columns=['label'])
-    goal = dataFrame['label']
-    return features, goal
+from tabulate import tabulate
+from colorama import Fore, Style, init
 
-# Split data into training and testing
-def split_data(features, goal, test_size=0.3, random_state=3):
-    X_train, X_test, y_train, y_test = train_test_split(features, goal, test_size=test_size, random_state=random_state)
-    return X_train, X_test, y_train, y_test
+from utils import (
+    splitData, load_csv,
+    getFeaturesAndLabels,
+    fixMissingValues,
+    convertNonNumericalData,
+    excludeFeatures,
+    calculate_performance
+)
 
-# Label encode categorical features
-def label_encode_categorical_features(dataFrame):
-    le = LabelEncoder() # encode non-numircal data into numircal data
-    dataFrame = dataFrame.apply(le.fit_transform) # apply the encoder to the data frame
-    return dataFrame
+from classifiers import (
+    knn,
+    naiveBayes,
+    decisionTree,
+    randomForest
+)
 
-# Solve missing values
-def solve_missing(dataFrame):
-    imputer = SimpleImputer(strategy = "most_frequent") # replace any missing data with the most frequent value
-    dataFrame = imputer.fit_transform(dataFrame)
-    return dataFrame
+# Initialize colorama for Windows compatibility
+init(autoreset=True)
 
-# Apply KNN classifier
-def apply_knn_classifier(K,X_train, X_test, y_train):
-    knn = KNeighborsClassifier(n_neighbors = K)
-    knn.fit(X_train, y_train)
-    return knn.predict(X_test)
+# Excluded features
+excludedFeatures = [
+    "dbName",
+    "avgNumColumns",
+    "avgNumRows"
+]
 
-# Apply Naive Bayes classifier
-def apply_naive_bayes_classifier(X_train, X_test, y_train):
-    gnb = GaussianNB()
-    gnb.fit(X_train, y_train)
-    return gnb.predict(X_test)
+def print_colored_report(title, accuracy, precision, recall, confusion_matrix, class_report):
+    """
+    Prints a classifier report as a table with colors.
+    """
+    print(f"{Fore.CYAN}{Style.BRIGHT}\n=== {title} ===\n{Style.RESET_ALL}")
 
-# Apply decision tree classifier
-def apply_decision_tree_classifier(X_train, X_test, y_train):
-    dt = DecisionTreeClassifier()
-    dt.fit(X_train, y_train)
-    return dt.predict(X_test)
+    # Table for overall metrics
+    metrics_table = [
+        ["Accuracy (%)", accuracy],
+        ["Precision (%)", precision],
+        ["Recall (%)", recall]
+    ]
+    print(Fore.GREEN + tabulate(metrics_table, headers=["Metric", "Value"], tablefmt="grid"))
+
+    # Print the classification report
+    print(Fore.YELLOW + "\nClassification Report:")
+    print(tabulate(
+        [row.split() for row in class_report.split("\n")[2:-3] if row],
+        headers=["Class", "Precision", "Recall", "F1-Score", "Support"],
+        tablefmt="grid"
+    ))
+
+    # Print the confusion matrix
+    print(Fore.MAGENTA + "\nConfusion Matrix:")
+    print(tabulate(confusion_matrix, tablefmt="grid"))
+
+def main():
+    file_path = 'consistent_classifier_data.csv'
+    df = load_csv(file_path)
+
+    # Exclude features and clean data
+    excludeFeatures(df, excludedFeatures)
+    df = df.replace([np.inf, -np.inf], np.nan).dropna()
+    x, y = df.shape
+    K = round(np.sqrt(x))
+
+    # Prepare features and labels
+    features, goal = getFeaturesAndLabels(df, 'label')
+    target = list(set(goal))
+    df = fixMissingValues(df)
+
+    # Split data
+    X_train, X_test, y_train, y_test = splitData(features, goal)
+    X_train = convertNonNumericalData(X_train)
+    X_test = convertNonNumericalData(X_test)
+
+    # KNN Classifier
+    y_pred_knn = knn(K, X_train, X_test, y_train)
+    A_res, P_res, _, con = calculate_performance(y_test, y_pred_knn)
+    knn_report = classification_report(y_test, y_pred_knn, target_names=target, zero_division=0)
+    print_colored_report("K-Nearest Neighbors (KNN)", A_res, P_res, P_res, con, knn_report)
+
+    # Naive Bayes Classifier
+    y_pred_nb = naiveBayes(X_train, X_test, y_train)
+    A_res, P_res, _, con = calculate_performance(y_test, y_pred_nb)
+    nb_report = classification_report(y_test, y_pred_nb, target_names=target, zero_division=0)
+    print_colored_report("Naive Bayes", A_res, P_res, P_res, con, nb_report)
+
+    # Decision Tree Classifier
+    y_pred_dt = decisionTree(X_train, X_test, y_train)
+    A_res, P_res, _, con = calculate_performance(y_test, y_pred_dt)
+    dt_report = classification_report(y_test, y_pred_dt, target_names=target, zero_division=0)
+    print_colored_report("Decision Tree", A_res, P_res, P_res, con, dt_report)
+
+    # Random Forest Classifier
+    _, y_pred_rf = randomForest(X_train, X_test, y_train)
+    A_res, P_res, _, con = calculate_performance(y_test, y_pred_rf)
+    rf_report = classification_report(y_test, y_pred_rf, target_names=target, zero_division=0)
+    print_colored_report("Random Forest", A_res, P_res, P_res, con, rf_report)
 
 
-#Apply randomForest classifier
-
-def apply_random_forest_classifier(X_train, X_test, y_train):
-    rm = RandomForestClassifier(n_estimators = 10, max_depth = 25, criterion = "gini", min_samples_split = 10)
-    rm.fit(X_train, y_train)
-    rm_prd = rm.predict(X_test)
-    return rm,rm_prd
-
-# Calculate performance using confusion matrix
-def calculate_performance(y_test, y_pred):
-    confusionMat = confusion_matrix(y_test, y_pred)
-    v = round(metrics.accuracy_score(y_test, y_pred) * 100) # compares y_test , y_pred - v = a percantage of similarity 
-    w = round(metrics.precision_score(y_test, y_pred, average = 'macro') * 100) # computes the accurecy of the classifier to predict a false postive 
-    z = round(metrics.recall_score(y_test, y_pred, average = 'macro') * 100) # computes the percantage of positive labels which the classifier got right
-    return v , w , z , confusionMat
-
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+    main()
